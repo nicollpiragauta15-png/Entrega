@@ -1,0 +1,76 @@
+======================================================================
+📋 REGISTRO DE PORTEROS - IGLESIA
+======================================================================
+📅 Fecha: 04/05/2026 14:16:20
+📆 Semana: 2026-W18
+======================================================================
+
+👥 PORTEROS REGISTRADOS:
+----------------------------------------
+ID: 1 | Carlos Rodríguez
+   🔒 Turno fijo: nocturno
+   🗓️ Día libre: Domingo
+   ⏰ Horas esta semana: 48/48
+
+ID: 2 | Ana Martínez
+   🗓️ Día libre: Lunes
+   ⏰ Horas esta semana: 40/48
+
+ID: 3 | Luis Fernández
+   🗓️ Día libre: Martes
+   ⏰ Horas esta semana: 40/48
+
+ID: 4 | María González
+   🗓️ Día libre: Miércoles
+   ⏰ Horas esta semana: 40/48
+
+
+📅 ASIGNACIONES DE LA SEMANA:
+----------------------------------------
+
+📌 LUNES:
+   🌅 Matutino (06:00-14:00): ✅ María González
+   ☀️ Vespertino (14:00-22:00): ✅ Luis Fernández
+   🌙 Nocturno (22:00-06:00): ✅ Carlos Rodríguez
+
+📌 MARTES:
+   🌅 Matutino (06:00-14:00): ✅ María González
+   ☀️ Vespertino (14:00-22:00): ✅ Ana Martínez
+   🌙 Nocturno (22:00-06:00): ✅ Carlos Rodríguez
+
+📌 MIÉRCOLES:
+   🌅 Matutino (06:00-14:00): ✅ Ana Martínez
+   ☀️ Vespertino (14:00-22:00): ✅ Luis Fernández
+   🌙 Nocturno (22:00-06:00): ✅ Carlos Rodríguez
+
+📌 JUEVES:
+   🌅 Matutino (06:00-14:00): ✅ Luis Fernández
+   ☀️ Vespertino (14:00-22:00): ✅ Ana Martínez
+   🌙 Nocturno (22:00-06:00): ✅ Carlos Rodríguez
+
+📌 VIERNES:
+   🌅 Matutino (06:00-14:00): ✅ María González
+   ☀️ Vespertino (14:00-22:00): ✅ Ana Martínez
+   🌙 Nocturno (22:00-06:00): ✅ Carlos Rodríguez
+
+📌 SÁBADO:
+   🌅 Matutino (06:00-14:00): ✅ Luis Fernández
+   ☀️ Vespertino (14:00-22:00): ✅ María González
+   🌙 Nocturno (22:00-06:00): ✅ Carlos Rodríguez
+
+📌 DOMINGO:
+   🌅 Matutino (06:00-14:00): ✅ Luis Fernández
+   ☀️ Vespertino (14:00-22:00): ✅ María González
+   🌙 Nocturno (22:00-06:00): ✅ Ana Martínez
+
+======================================================================
+📊 RESUMEN DE HORAS SEMANALES
+======================================================================
+Carlos Rodríguez: 48 horas - ✅ DENTRO DEL LÍMITE
+Ana Martínez: 40 horas - ✅ DENTRO DEL LÍMITE
+Luis Fernández: 40 horas - ✅ DENTRO DEL LÍMITE
+María González: 40 horas - ✅ DENTRO DEL LÍMITE
+
+======================================================================
+✅ REPORTE GENERADO AUTOMÁTICAMENTE
+======================================================================
