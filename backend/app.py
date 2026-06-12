@@ -650,6 +650,65 @@ def exportar_excel():
             fila_inicio_bloque += 31
         output = BytesIO()
         ws.column_dimensions["A"].width = 22
+        resumen_horas = obtener_resumen_horas_excel()
+        col_inicio_resumen = 15  # Columna O
+        fila_inicio_resumen = 1
+        encabezados = [
+            "PORTERO",
+            "HORAS SEMANA",
+            "LÍMITE",
+            "HORAS MES"
+        ]
+
+        for i, encabezado in enumerate(encabezados):
+            celda = ws.cell(
+                fila_inicio_resumen,
+                col_inicio_resumen + i
+            )
+
+            celda.value = encabezado
+            celda.fill = gris
+            celda.font = fuente_negra
+            celda.border = borde
+            celda.alignment = centro
+            
+            fila_actual = fila_inicio_resumen + 1
+            for item in resumen_horas:
+
+                ws.cell(
+                    fila_actual,
+                    col_inicio_resumen
+                ).value = item["nombre"]
+
+                ws.cell(
+                    fila_actual,
+                    col_inicio_resumen + 1
+                ).value = item["semanal"]
+
+                ws.cell(
+                    fila_actual,
+                    col_inicio_resumen + 2
+                ).value = item["limite"]
+
+                ws.cell(
+                    fila_actual,
+                    col_inicio_resumen + 3
+                ).value = item["mensual"]
+
+                for col in range(
+                    col_inicio_resumen,
+                    col_inicio_resumen + 4
+                ):
+                    celda = ws.cell(
+                        fila_actual,
+                        col
+                    )
+
+                    celda.border = borde
+                    celda.alignment = centro
+
+                fila_actual += 1
+
         for col in range(2, 12):
             letra = get_column_letter(col)
             ws.column_dimensions[
@@ -658,6 +717,11 @@ def exportar_excel():
         for bloque_num in range(len(bloques)):
             fila_novedades = 28 + (bloque_num * 31)
             ws.row_dimensions[fila_novedades].height = 40    
+            resumen_horas = obtener_resumen_horas_excel()
+            ws.column_dimensions["O"].width = 30
+            ws.column_dimensions["P"].width = 18
+            ws.column_dimensions["Q"].width = 15
+            ws.column_dimensions["R"].width = 18
         wb.save(output)
         output.seek(0)
         return send_file(
