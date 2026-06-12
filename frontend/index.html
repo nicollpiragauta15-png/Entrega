@@ -12,6 +12,59 @@
     <div class="top-section">
         <!-- FORMULARIO (IZQUIERDA) -->
         <div class="form-card">
+            <div class="admin-porteros">
+    <h3>👥 Administración de Porteros</h3>
+
+    <div class="form-row">
+        <div style="flex:2;">
+            <label>Ingresar nuevo portero</label>
+            <input type="text" id="nuevoPortero" placeholder="Nombre del portero">
+        </div>
+
+        <div style="flex:1.5;">
+            <label>Día de descanso</label>
+            <select id="nuevoDiaDescanso">
+                <option value="">Seleccione</option>
+                <option value="Lunes">Lunes</option>
+                <option value="Martes">Martes</option>
+                <option value="Miércoles">Miércoles</option>
+                <option value="Jueves">Jueves</option>
+                <option value="Viernes">Viernes</option>
+                <option value="Sábado">Sábado</option>
+                <option value="Domingo">Domingo</option>
+            </select>
+        </div>
+
+        <div style="flex:1;">
+            <label>&nbsp;</label>
+            <button
+                type="button"
+                id="btnGuardarPortero"
+                class="btn-secondary">
+                Agregar
+            </button>
+        </div>
+
+    </div>
+
+    <div class="form-row">
+        <div style="flex:3;">
+            <label>Selecciona el portero a eliminar</label>
+            <select id="porteroEliminar">
+                <option value="">
+                    Seleccione un portero
+                </option>
+            </select>
+        </div>
+
+        <div style="flex:1;">
+            <label>&nbsp;</label>
+            <button type="button" id="btnEliminarPortero" class="btn-danger">
+              Eliminar
+            </button>
+        </div>
+    </div>
+</div>
             <h1>📋 Sistema de Asignación de Turnos</h1>
             <div id="alert" class="alert"></div>
             <form id="formAsignacion">
@@ -69,7 +122,9 @@
                 </div>
 
                 <div class="form-buttons">
+                    <label>Ingresar nuevo portero</label>
                     <button type="submit" id="btnAsignar" disabled>✅ Asignar Turno</button>
+                    <button type="button" id="btnRegistrarNovedad" class="btn-secondary"> Registrar Novedad </button>
                     <button type="button" id="btnReiniciar" class="btn-danger">🗑️ Reiniciar registros</button>
                 </div>
             </form>
@@ -152,6 +207,55 @@
         </div>
     </div>
 
+    <div id="modalNovedad" class="modal">
+        <div class="modal-content">
+            <span
+                class="cerrar-modal"
+                onclick="cerrarModalNovedad()">
+                &times;
+            </span>
+            <h2>Registrar Novedad</h2>
+            <div class="form-group">
+                <label>Descripción Novedad</label>
+                <textarea
+                    id="descripcionNovedad"
+                    rows="4">
+                </textarea>
+            </div>
+            <div class="form-group">
+                <label>Portero</label>
+                <select id="porteroNovedad">
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Fecha Novedad</label>
+                <input
+                    type="date"
+                    id="fechaNovedad">
+            </div>
+            <div class="form-group">
+                <label>Horas</label>
+                <input
+                    type="number"
+                    id="horasNovedad"
+                    min="0"
+                    step="0.5">
+            </div>
+            <div class="form-buttons">
+                <button
+                    type="button"
+                    onclick="guardarNovedad()">
+                    Guardar
+                </button>
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="cerrarModalNovedad()">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
     <script src="/js/app.js"></script>
 </body>
 </html>

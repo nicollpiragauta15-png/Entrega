@@ -4,30 +4,26 @@ from datetime import datetime, timedelta
 
 class GestorPorteros:
     def __init__(self):
-        self.dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-        
+        self.dias_semana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]        
         self.porteros = {
             1: {"nombre": "HOA", "activo": True, "dia_descanso": "Sábado"},
             2: {"nombre": "CR7", "activo": True, "dia_descanso": "Lunes"},
             3: {"nombre": "YA", "activo": True, "dia_descanso": "Martes"},
             4: {"nombre": "FIM", "activo": True, "dia_descanso": "Domingo"}
         }
-        
         self.asignaciones = []
+        self.novedades = []
+        self.cargar_porteros()
         self.cargar_datos()
     
     def obtener_porteros(self):
-
         return [
-
             {
                 "id": id,
                 "nombre": p["nombre"],
                 "dia_descanso": p.get("dia_descanso")
             }
-
             for id, p in self.porteros.items()
-
             if p["activo"]
         ]
     
@@ -36,10 +32,8 @@ class GestorPorteros:
         try:
             inicio = datetime.strptime(hora_inicio, "%H:%M")
             fin = datetime.strptime(hora_fin, "%H:%M")
-            
             if fin <= inicio:
                 fin = fin.replace(day=fin.day + 1)
-            
             diferencia = (fin - inicio).seconds / 3600
             return round(diferencia, 1)
         except:
@@ -52,79 +46,57 @@ class GestorPorteros:
                 inicio_existente = datetime.strptime(asig["hora_inicio"], "%H:%M")
                 fin_existente = datetime.strptime(asig["hora_fin"], "%H:%M")
                 nuevo_inicio = datetime.strptime(hora_inicio, "%H:%M")
-                nuevo_fin = datetime.strptime(hora_fin, "%H:%M")
-                
+                nuevo_fin = datetime.strptime(hora_fin, "%H:%M")                
                 if fin_existente <= inicio_existente:
                     fin_existente = fin_existente.replace(day=fin_existente.day + 1)
                 if nuevo_fin <= nuevo_inicio:
                     nuevo_fin = nuevo_fin.replace(day=nuevo_fin.day + 1)
-                
                 if not (nuevo_fin <= inicio_existente or nuevo_inicio >= fin_existente):
                     return True, f"Conflicto con turno existente: {asig['hora_inicio']} - {asig['hora_fin']}"
         return False, ""
     
     def asignar_turno(self, portero_id, fecha_real, dia_descanso, dia_asignar, hora_inicio, hora_fin,horas_mantenimiento):
-
         if portero_id not in self.porteros:
             return False, "Portero no encontrado"
-
-        # Día descanso fijo
         dia_descanso = self.porteros[
             portero_id
         ]["dia_descanso"]
-
         if dia_asignar == dia_descanso:
-
             return False, (
                 f"El portero descansa el "
                 f"{dia_descanso}"
             )
-
         horas = self.calcular_horas(
             hora_inicio,
             hora_fin
         )
-
         limite = self.obtener_horas_semanales(
             fecha_real
         )
-
         horas_actuales = (
-            self.calcular_total_horas_portero(
-                portero_id,
-                fecha_real,
-                dia_descanso
+            self.obtener_horas_ciclo_actual(
+                portero_id
             )
         )
-
         nuevo_total = horas_actuales + horas
-
         if nuevo_total > limite:
-
-            return False, (
-                f"El portero ya tiene "
-                f"{horas_actuales} horas. "
-                f"Con este turno tendría "
-                f"{nuevo_total} horas "
-                f"(máximo {limite})"
+            print(
+                f"⚠️ Advertencia: "
+                f"{self.porteros[portero_id]['nombre']} "
+                f"tendría {nuevo_total} horas "
+                f"(límite {limite})"
             )
-
         if horas > 8:
-
             print(
                 f"⚠️ Advertencia: "
                 f"Turno con {horas} horas"
             )
-
         if horas <= 0:
-
             return False, (
                 "Las horas deben "
                 "ser mayores a 0"
             )
-
         if horas_mantenimiento != "Si":
-
             hay_conflicto, mensaje = (
                 self.verificar_conflicto_horario(
                     fecha_real,
@@ -133,53 +105,34 @@ class GestorPorteros:
                     hora_fin
                 )
             )
-
             if hay_conflicto:
                 return False, mensaje
-
         actividad = "Porteria"
-
         if horas_mantenimiento == "Si":
             actividad = "Mantenimiento"
-
         fecha_calculada = self.calcular_fecha_real(
             fecha_real,
             dia_asignar
         )
-        
         asignacion = {
-
             "id": len(self.asignaciones) + 1,
-
             "portero_id": portero_id,
-
             "portero_nombre": self.porteros[
                 portero_id
             ]["nombre"],
-
             "fecha": fecha_calculada,
-
             "dia_descanso": dia_descanso,
-
             "dia_asignar": dia_asignar,
-
             "hora_inicio": hora_inicio,
-
             "hora_fin": hora_fin,
-
             "horas": horas,
-
             "actividad": actividad,
-
             "fecha_registro": datetime.now().strftime(
                 "%Y-%m-%d %H:%M:%S"
             )
         }
-
         self.asignaciones.append(asignacion)
-
         self.guardar_datos()
-
         return True, (
             f"Turno asignado a "
             f"{self.porteros[portero_id]['nombre']}"
@@ -193,64 +146,197 @@ class GestorPorteros:
     
     def guardar_datos(self):
         try:
+
+            print("GUARDANDO...")
+            print("ASIGNACIONES:", len(self.asignaciones))
+            print("NOVEDADES:", len(self.novedades))
+
             if not os.path.exists('data'):
                 os.makedirs('data')
-            with open('data/asignaciones.json', 'w', encoding='utf-8') as f:
-                json.dump(self.asignaciones, f, ensure_ascii=False, indent=2)
+
+            # Guardar asignaciones
+            with open(
+                'data/asignaciones.json',
+                'w',
+                encoding='utf-8'
+            ) as f:
+
+                json.dump(
+                    self.asignaciones,
+                    f,
+                    ensure_ascii=False,
+                    indent=2
+                )
+
+            # Guardar novedades
+            with open(
+                'data/novedades.json',
+                'w',
+                encoding='utf-8'
+            ) as f:
+
+                json.dump(
+                    self.novedades,
+                    f,
+                    ensure_ascii=False,
+                    indent=2
+                )
+
         except Exception as e:
+
             print(f"Error al guardar: {e}")
     
     def cargar_datos(self):
         try:
-            if os.path.exists('data/asignaciones.json'):
-                with open('data/asignaciones.json', 'r', encoding='utf-8') as f:
+
+            # Cargar asignaciones
+            if os.path.exists(
+                'data/asignaciones.json'
+            ):
+
+                with open(
+                    'data/asignaciones.json',
+                    'r',
+                    encoding='utf-8'
+                ) as f:
+
                     data = json.load(f)
+
                     if isinstance(data, list):
                         self.asignaciones = data
-                    else:  
+                    else:
                         self.asignaciones = []
+
+            # Cargar novedades
+            if os.path.exists(
+                'data/novedades.json'
+            ):
+
+                with open(
+                    'data/novedades.json',
+                    'r',
+                    encoding='utf-8'
+                ) as f:
+
+                    data = json.load(f)
+
+                    if isinstance(data, list):
+                        self.novedades = data
+                    else:
+                        self.novedades = []
+
         except Exception as e:
+
             print(f"Error al cargar: {e}")
+
             self.asignaciones = []
+            self.novedades = []
 
 
-    def generar_recomendacion(self, fecha, hora_inicio, portero_id, dia_descanso, mantenimiento=False):
-        limite = self.obtener_horas_semanales(fecha)
-        horas_actuales = (self.calcular_total_horas_portero(portero_id, fecha, dia_descanso))
-        horas_restantes = (limite - horas_actuales)
+    def generar_recomendacion(
+        self,
+        fecha,
+        hora_inicio,
+        portero_id,
+        dia_descanso,
+        mantenimiento=False
+    ):
+
+        fecha_obj = datetime.strptime(
+            fecha,
+            "%Y-%m-%d"
+        )
+
+        fecha_cambio = datetime(
+            2026,
+            7,
+            12
+        )
+
+        # Horas normales por turno según fecha
+        if fecha_obj < fecha_cambio:
+            horas_base_turno = 8
+        else:
+            horas_base_turno = 7
+
+        horas_actuales = (
+            self.obtener_horas_ciclo_actual(
+                portero_id
+            )
+        )
+
+        dias_ciclo = (
+            self.obtener_dias_ciclo_actual(
+                portero_id
+            )
+        )
+
+        # Límite del ciclo
+        if horas_actuales >= 42:
+            limite = 44
+        else:
+            limite = 42
+
+        horas_restantes = (
+            limite - horas_actuales
+        )
+
         if horas_restantes <= 0:
+
             return {
+                "horas_semanales": limite,
+                "horas_actuales": horas_actuales,
+                "horas_restantes": 0,
                 "horas_turno": 0,
+                "actividad": "Finalizado",
                 "hora_inicio": hora_inicio,
                 "hora_fin": hora_inicio,
-                "mensaje": "Este portero ya completo sus horas"
+                "mensaje":
+                    "Este ciclo ya completó "
+                    "sus horas"
             }
-        
+
+        # Recomendación de mantenimiento
         if mantenimiento:
+
             actividad = "Mantenimiento"
-            horas_turno = min(2, horas_restantes)
+
+            horas_turno = min(
+                2,
+                horas_restantes
+            )
 
         elif horas_restantes <= 2:
-            horas_turno = horas_restantes
+
             actividad = "Mantenimiento"
+
+            horas_turno = horas_restantes
+
         else:
+
             actividad = "Porteria"
-            if limite == 42:
-                horas_turno = min(
-                    7, horas_restantes
-                )
-            else:
-                horas_turno = min(8, horas_restantes)
-        inicio = datetime.strptime(hora_inicio, "%H:%M")
+
+            horas_turno = min(
+                horas_base_turno,
+                horas_restantes
+            )
+
+        inicio = datetime.strptime(
+            hora_inicio,
+            "%H:%M"
+        )
+
         fin = (
             inicio +
             timedelta(hours=horas_turno) -
             timedelta(minutes=1)
         )
+
         return {
             "horas_semanales": limite,
             "horas_actuales": horas_actuales,
             "horas_restantes": horas_restantes,
+            "dias_ciclo": dias_ciclo,
             "horas_turno": horas_turno,
             "actividad": actividad,
             "hora_inicio": hora_inicio,
@@ -287,6 +373,9 @@ class GestorPorteros:
             )
         )
 
+        print("SEMANA:", inicio_semana, fin_semana)
+
+        # TURNOS
         for asignacion in self.asignaciones:
 
             if asignacion["portero_id"] != portero_id:
@@ -297,11 +386,38 @@ class GestorPorteros:
                 "%Y-%m-%d"
             )
 
-            if (
-                inicio_semana <= fecha_asig <= fin_semana
-            ):
+            if inicio_semana <= fecha_asig <= fin_semana:
+
+                print(
+                    "SUMANDO TURNO:",
+                    asignacion["horas"]
+                )
 
                 total += asignacion["horas"]
+
+        # NOVEDADES
+        for novedad in self.novedades:
+
+            if novedad["portero_id"] != portero_id:
+                continue
+
+            fecha_nov = datetime.strptime(
+                novedad["fecha"],
+                "%Y-%m-%d"
+            )
+
+            if inicio_semana <= fecha_nov <= fin_semana:
+
+                print(
+                    "SUMANDO NOVEDAD:",
+                    novedad["horas"]
+                )
+
+                total += float(
+                    novedad["horas"]
+                )
+
+        print("TOTAL FINAL:", total)
 
         return total
     
@@ -503,9 +619,11 @@ class GestorPorteros:
                 )
                 if nuevo_total > limite:
 
-                    return False, (
-                        f"El portero excede "
-                        f"las {limite} horas"
+                    advertencia = (
+                        f" ⚠️ Advertencia: el portero tiene "
+                        f"{horas_actuales} horas y con este turno "
+                        f"llegará a {nuevo_total} horas "
+                        f"(límite recomendado {limite})."
                     )
                 # Verificar conflictos
                 for otra in self.asignaciones:
@@ -606,6 +724,160 @@ class GestorPorteros:
 
         return False, "Turno no encontrado"
     
+    def agregar_portero(self, nombre, dia_descanso):
+
+        nombre = nombre.strip()
+
+        if not nombre:
+            return False, "Nombre inválido"
+
+        for portero in self.porteros.values():
+
+            if portero["nombre"].upper() == nombre.upper():
+
+                return False, "El portero ya existe"
+
+        nuevo_id = max(self.porteros.keys()) + 1
+
+        self.porteros[nuevo_id] = {
+            "nombre": nombre,
+            "activo": True,
+            "dia_descanso": dia_descanso
+        }
+
+        self.guardar_porteros()
+
+        return True, "Portero agregado correctamente"
+
+
+    def guardar_porteros(self):
+
+        try:
+
+            if not os.path.exists('data'):
+                os.makedirs('data')
+
+            with open(
+                'data/porteros.json',
+                'w',
+                encoding='utf-8'
+            ) as f:
+
+                json.dump(
+                    self.porteros,
+                    f,
+                    ensure_ascii=False,
+                    indent=2
+                )
+
+        except Exception as e:
+
+            print(
+                f"Error guardando porteros: {e}"
+            )
+
+    def calcular_total_horas_mensual(
+        self,
+        portero_id,
+        fecha_referencia
+    ):
+
+        fecha_fin = datetime.strptime(
+            fecha_referencia,
+            "%Y-%m-%d"
+        )
+
+        fecha_inicio = (
+            fecha_fin -
+            timedelta(days=29)
+        )
+
+        total = 0
+
+        # TURNOS
+        for asignacion in self.asignaciones:
+
+            if asignacion["portero_id"] != portero_id:
+                continue
+
+            fecha_asig = datetime.strptime(
+                asignacion["fecha"],
+                "%Y-%m-%d"
+            )
+
+            if fecha_inicio <= fecha_asig <= fecha_fin:
+
+                total += asignacion["horas"]
+
+        # NOVEDADES
+        for novedad in self.novedades:
+
+            if novedad["portero_id"] != portero_id:
+                continue
+
+            fecha_nov = datetime.strptime(
+                novedad["fecha"],
+                "%Y-%m-%d"
+            )
+
+            if fecha_inicio <= fecha_nov <= fecha_fin:
+
+                total += float(
+                    novedad["horas"]
+                )
+
+        return round(total, 1)
+
+
+    def cargar_porteros(self):
+
+        try:
+
+            if os.path.exists(
+                'data/porteros.json'
+            ):
+
+                with open(
+                    'data/porteros.json',
+                    'r',
+                    encoding='utf-8'
+                ) as f:
+
+                    data = json.load(f)
+
+                    self.porteros = {
+                        int(k): v
+                        for k, v in data.items()
+                    }
+
+        except Exception as e:
+
+            print(
+                f"Error cargando porteros: {e}"
+            )
+
+    def eliminar_portero(self, portero_id):
+
+        if portero_id not in self.porteros:
+
+            return False, "Portero no encontrado"
+
+        tiene_turnos = any(
+            a["portero_id"] == portero_id
+            for a in self.asignaciones
+        )
+
+        if tiene_turnos:
+
+            return False, (
+                "No se puede eliminar porque "
+                "tiene turnos registrados"
+            )
+
+        del self.porteros[portero_id]
+
+        return True, "Portero eliminado correctamente"
+    
     def eliminar_turno(self, asignacion_id):
         try:
             # Buscar el turno
@@ -636,3 +908,143 @@ class GestorPorteros:
         except Exception as e:
             print(f"Error eliminando turno: {e}")
             return False, f"Error al eliminar: {str(e)}"
+        
+    def obtener_horas_ciclo_actual(
+        self,
+        portero_id
+    ):
+
+        registros = []
+
+        # Turnos
+        for turno in self.asignaciones:
+
+            if turno["portero_id"] == portero_id:
+
+                registros.append({
+                    "fecha": turno["fecha"],
+                    "horas": float(turno["horas"] or 0)
+                })
+
+        # Novedades
+        for novedad in self.novedades:
+
+            if novedad["portero_id"] == portero_id:
+
+                registros.append({
+                    "fecha": novedad["fecha"],
+                    "horas": float(novedad.get("horas") or 0)
+                })
+
+        registros.sort(
+            key=lambda x: x["fecha"]
+        )
+
+        horas_ciclo = 0
+        dias_ciclo = 0
+
+        for registro in registros:
+
+            horas_ciclo += registro["horas"]
+            dias_ciclo += 1
+
+            if dias_ciclo == 6:
+
+                horas_ciclo = 0
+                dias_ciclo = 0
+
+        return horas_ciclo
+    
+    def obtener_dias_ciclo_actual(
+        self,
+        portero_id
+    ):
+
+        registros = []
+
+        for turno in self.asignaciones:
+
+            if turno["portero_id"] == portero_id:
+
+                registros.append(
+                    turno["fecha"]
+                )
+
+        for novedad in self.novedades:
+
+            if novedad["portero_id"] == portero_id:
+
+                registros.append(
+                    novedad["fecha"]
+                )
+
+        registros.sort()
+
+        dias_ciclo = len(registros) % 6
+
+        return dias_ciclo
+
+    def agregar_novedad(
+        self,
+        descripcion,
+        portero_id,
+        fecha,
+        horas
+    ):
+        
+        print("DEBUG: agregando novedad")
+
+        self.novedades.append({
+
+            "id": len(self.novedades)+1,
+
+            "descripcion": descripcion,
+
+            "portero_id": portero_id,
+
+            "portero_nombre": self.porteros[portero_id]["nombre"],
+
+            "fecha": fecha,
+
+            "horas": horas
+        })
+
+        print("TOTAL NOVEDADES:", len(self.novedades))
+        print("ULTIMA NOVEDAD:", self.novedades[-1])
+
+        self.guardar_datos()
+
+        return True, "Novedad registrada"
+
+        portero = self.porteros.get(
+            portero_id
+        )
+
+        if not portero:
+
+            return False, "Portero no existe"
+
+        self.novedades.append({
+
+            "id":
+                len(self.novedades)+1,
+
+            "descripcion":
+                descripcion,
+
+            "portero_id":
+                portero_id,
+
+            "portero_nombre":
+                portero["nombre"],
+
+            "fecha":
+                fecha,
+
+            "horas":
+                horas
+        })
+
+        self.guardar_datos()
+
+        return True, "Novedad registrada"

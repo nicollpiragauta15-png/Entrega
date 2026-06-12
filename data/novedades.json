@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "descripcion": "Votaciones               ",
+    "portero_id": 1,
+    "portero_nombre": "HOA",
+    "fecha": "2026-04-10",
+    "horas": 4
+  },
+  {
+    "id": 2,
+    "descripcion": "Votaciones               ",
+    "portero_id": 2,
+    "portero_nombre": "CR7",
+    "fecha": "2026-04-09",
+    "horas": 4
+  },
+  {
+    "id": 3,
+    "descripcion": "COMPENSATORIO VOTACION        ",
+    "portero_id": 4,
+    "portero_nombre": "FIM",
+    "fecha": "2026-04-17",
+    "horas": 4
+  }
+]

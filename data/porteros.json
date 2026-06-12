@@ -1,0 +1,22 @@
+{
+  "1": {
+    "nombre": "HOA",
+    "activo": true,
+    "dia_descanso": "Sábado"
+  },
+  "2": {
+    "nombre": "CR7",
+    "activo": true,
+    "dia_descanso": "Lunes"
+  },
+  "3": {
+    "nombre": "YA",
+    "activo": true,
+    "dia_descanso": "Martes"
+  },
+  "4": {
+    "nombre": "FIM",
+    "activo": true,
+    "dia_descanso": "Domingo"
+  }
+}

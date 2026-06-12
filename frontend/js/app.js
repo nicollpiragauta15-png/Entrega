@@ -3,6 +3,7 @@ let turnosAsignados = [];
 let porterosData = [];
 let formularioHabilitado = true;
 let ultimoTurno = null;
+let novedades = [];
 
 const fechaInput = document.getElementById('fecha');
 const porteroSelect = document.getElementById('portero');
@@ -23,6 +24,13 @@ const tablaContabilidad = document.getElementById('tablaContabilidad');
 const modalEditar = document.getElementById('modalEditar');
 const formEditar = document.getElementById('formEditar');
 const btnExportarExcel = document.getElementById('btnExportarExcel');
+const nuevoPorteroInput = document.getElementById('nuevoPortero');
+const btnGuardarPortero = document.getElementById('btnGuardarPortero');
+const porteroEliminarSelect = document.getElementById('porteroEliminar');
+const btnEliminarPortero = document.getElementById('btnEliminarPortero');
+const nuevoDiaDescanso = document.getElementById('nuevoDiaDescanso');
+const modalNovedad = document.getElementById('modalNovedad');
+const btnRegistrarNovedad = document.getElementById('btnRegistrarNovedad');
 
 function mostrarAlerta(mensaje, tipo) {
     alertDiv.textContent = mensaje;
@@ -31,6 +39,30 @@ function mostrarAlerta(mensaje, tipo) {
     setTimeout(() => {
         alertDiv.style.display = 'none';
     }, 3000);
+}
+
+async function cargarNovedades() {
+
+    try {
+
+        const response = await fetch(
+            '/api/novedades'
+        );
+
+        const data = await response.json();
+
+        if (data.success) {
+
+            novedades = data.data;
+        }
+
+    } catch (error) {
+
+        console.error(
+            'Error cargando novedades:',
+            error
+        );
+    }
 }
 
 async function cargarPorteros() {
@@ -46,6 +78,18 @@ async function cargarPorteros() {
             
             // 👇 AGREGAR ESTA LÍNEA 👇
             porteroSelect.disabled = false;
+
+            porteroEliminarSelect.innerHTML =
+                '<option value="">Seleccione un portero</option>';
+
+            data.data.forEach(portero => {
+
+                porteroEliminarSelect.innerHTML += `
+                    <option value="${portero.id}">
+                        ${portero.nombre}
+                    </option>
+                `;
+            });
         }
     } catch (error) {
         mostrarAlerta('Error al cargar porteros', 'error');
@@ -210,9 +254,20 @@ function verificarConflictoConTurnosAnteriores(totalHoras) {
         }
     }
     
-    if (!hayConflicto && totalHoras <= 8) {
+    if (!hayConflicto) {
+
         btnAsignar.disabled = false;
+
+        const porteroId =
+            parseInt(porteroSelect.value);
+
+        verificarCargaHorariaPortero(
+            porteroId,
+            totalHoras
+        );
+
     } else {
+
         btnAsignar.disabled = true;
     }
 }
@@ -318,6 +373,66 @@ async function eliminarTurno(asignacionId) {
     }
 }
 
+function calcularCiclosPortero(turnosPortero, novedadesPortero = []) {
+
+    const registros = [];
+
+    // Turnos normales
+    turnosPortero.forEach(turno => {
+
+        registros.push({
+            fecha: turno.fecha,
+            horas: Number(turno.horas)
+        });
+    });
+
+    // Novedades
+    novedadesPortero.forEach(novedad => {
+
+        registros.push({
+            fecha: novedad.fecha,
+            horas: Number(novedad.horas)
+        });
+    });
+
+    // Ordenar por fecha
+    registros.sort(
+        (a, b) =>
+            new Date(a.fecha) -
+            new Date(b.fecha)
+    );
+
+    const ciclos = [];
+
+    let horasCiclo = 0;
+    let diasCiclo = 0;
+
+    registros.forEach(registro => {
+
+        horasCiclo += registro.horas;
+        diasCiclo++;
+
+        if (diasCiclo === 6) {
+
+            ciclos.push(horasCiclo);
+
+            horasCiclo = 0;
+            diasCiclo = 0;
+        }
+    });
+
+    // Ciclo incompleto
+    if (
+        diasCiclo > 0 ||
+        horasCiclo > 0
+    ) {
+
+        ciclos.push(horasCiclo);
+    }
+
+    return ciclos;
+}
+
 function actualizarContabilidadPersonal() {
 
     if (turnosAsignados.length === 0) {
@@ -325,7 +440,7 @@ function actualizarContabilidadPersonal() {
         tablaContabilidad.innerHTML =
             '<div class="empty-table">No hay datos del personal</div>';
 
-        return;
+        return; 
     }
 
     const contabilidad = {};
@@ -333,18 +448,55 @@ function actualizarContabilidadPersonal() {
     // Recorrer TODOS los turnos guardados
     turnosAsignados.forEach(turno => {
 
-        const nombre = turno.portero_nombre;
+        const nombre =
+            turno.portero_nombre;
 
         if (!contabilidad[nombre]) {
 
             contabilidad[nombre] = {
-                horas: 0,
-                turnos: 0
+
+                horasMes: 0,
+                turnos: 0,
+                turnosData: [],
+                novedadesData: []
             };
         }
 
-        contabilidad[nombre].horas += turno.horas;
-        contabilidad[nombre].turnos += 1;
+        contabilidad[nombre]
+            .horasMes += turno.horas;
+
+        contabilidad[nombre]
+            .turnos++;
+
+        contabilidad[nombre]
+            .turnosData.push(turno);
+    });
+
+    novedades.forEach(novedad => {
+
+        const nombre =
+            novedad.portero_nombre;
+
+        if (!contabilidad[nombre]) {
+
+            contabilidad[nombre] = {
+
+                horasMes: 0,
+                turnos: 0,
+                turnosData: [],
+                novedadesData: []
+            };
+        }
+
+        contabilidad[nombre]
+            .horasMes += Number(
+                novedad.horas
+            );
+
+        contabilidad[nombre]
+            .novedadesData.push(
+                novedad
+            );
     });
 
     let html = `
@@ -352,8 +504,9 @@ function actualizarContabilidadPersonal() {
             <thead>
                 <tr>
                     <th>Portero</th>
-                    <th>Total Horas</th>
-                    <th>Total Turnos</th>
+                    <th>Horas Mes</th>
+                    <th>Turnos</th>
+                    <th>Ciclos</th>
                     <th>Estado</th>
                 </tr>
             </thead>
@@ -363,21 +516,74 @@ function actualizarContabilidadPersonal() {
 
     Object.keys(contabilidad).forEach(nombre => {
 
-        const datos = contabilidad[nombre];
+        const datos =
+            contabilidad[nombre];
 
-        let estado = 'Disponible';
-        let clase = 'badge-success';
+        const ciclos =
+            calcularCiclosPortero(
+                datos.turnosData,
+                datos.novedadesData
+            );
 
-        if (datos.horas >= 42) {
+        const detalleCiclos =
+            ciclos.map(
+                (horas, index) => {
 
-            estado = 'Alta carga';
-            clase = 'badge-warning';
+                    let icono = '🟢';
+
+                    if (horas >= 44) {
+
+                        icono = '🔴';
+
+                    } else if (
+                        horas >= 42
+                    ) {
+
+                        icono = '🟡';
+                    }
+
+                    return `
+                        ${icono}
+                        C${index + 1}:
+                        ${horas.toFixed(1)}h
+                    `;
+                }
+            ).join('<br>');
+
+        let estado =
+            'Disponible';
+
+        let clase =
+            'badge-success';
+
+        const tieneExceso =
+            ciclos.some(
+                h => h >= 44
+            );
+
+        const tieneAlerta =
+            ciclos.some(
+                h =>
+                    h >= 42 &&
+                    h < 44
+            );
+
+        if (tieneAlerta) {
+
+            estado =
+                'Ciclo alto';
+
+            clase =
+                'badge-warning';
         }
 
-        if (datos.horas >= 44) {
+        if (tieneExceso) {
 
-            estado = 'Límite excedido';
-            clase = 'badge-warning';
+            estado =
+                'Ciclo excedido';
+
+            clase =
+                'badge-danger';
         }
 
         html += `
@@ -389,12 +595,16 @@ function actualizarContabilidadPersonal() {
 
                 <td>
                     <strong>
-                        ${datos.horas.toFixed(1)} horas
+                        ${datos.horasMes.toFixed(1)} h
                     </strong>
                 </td>
 
                 <td>
                     ${datos.turnos}
+                </td>
+
+                <td>
+                    ${detalleCiclos}
                 </td>
 
                 <td>
@@ -799,8 +1009,278 @@ async function actualizarPreviewExcel() {
     }
 }
 
+async function guardarPortero() {
+
+    const nombre =
+        nuevoPorteroInput.value.trim();
+
+    const dia_descanso =
+        nuevoDiaDescanso.value;
+
+    if (!nombre) {
+
+        mostrarAlerta(
+            'Ingrese un nombre',
+            'error'
+        );
+
+        return;
+    }
+
+    if (!dia_descanso) {
+
+        mostrarAlerta(
+            'Seleccione el día de descanso',
+            'error'
+        );
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                '/api/agregar-portero',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type':
+                            'application/json'
+                    },
+                    body: JSON.stringify({
+                        nombre,
+                        dia_descanso
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        mostrarAlerta(
+            data.message,
+            data.success
+                ? 'success'
+                : 'error'
+        );
+
+        if (data.success) {
+
+            nuevoPorteroInput.value = '';
+            nuevoDiaDescanso.value = '';
+
+            await cargarPorteros();
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        mostrarAlerta(
+            'Error al guardar el portero',
+            'error'
+        );
+    }
+}
+
+async function eliminarPortero() {
+
+    const id =
+        porteroEliminarSelect.value;
+
+    if (!id) {
+
+        mostrarAlerta(
+            'Seleccione un portero',
+            'error'
+        );
+
+        return;
+    }
+
+    if (
+        !confirm(
+            '¿Eliminar este portero?'
+        )
+    ) {
+        return;
+    }
+
+    const response =
+        await fetch(
+            '/api/eliminar-portero',
+            {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type':
+                        'application/json'
+                },
+                body: JSON.stringify({
+                    portero_id: id
+                })
+            }
+        );
+
+    const data =
+        await response.json();
+
+    mostrarAlerta(
+        data.message,
+        data.success
+            ? 'success'
+            : 'error'
+    );
+
+    if (data.success) {
+
+        await cargarPorteros();
+    }
+}
+
 function descargarExcel() {
     window.open(`${API_URL}/api/exportar-excel`, '_blank');
+}
+
+btnRegistrarNovedad.addEventListener(
+    'click',
+    abrirModalNovedad
+);
+
+function abrirModalNovedad() {
+
+    modalNovedad.style.display =
+        'flex';
+
+    document.getElementById(
+        'fechaNovedad'
+    ).value = fechaInput.value;
+
+    const select =
+        document.getElementById(
+            'porteroNovedad'
+        );
+
+    select.innerHTML = '';
+
+    porterosData.forEach(portero => {
+
+        select.innerHTML += `
+            <option value="${portero.id}">
+                ${portero.nombre}
+            </option>
+        `;
+    });
+}
+
+function verificarCargaHorariaPortero(porteroId, horasNuevoTurno = 0) {
+
+    const portero = porterosData.find(
+        p => p.id == porteroId
+    );
+
+    if (!portero) return;
+
+    const turnosPortero =
+        turnosAsignados.filter(
+            t => t.portero_id == porteroId
+        );
+
+    const horasActuales =
+        turnosPortero.reduce(
+            (total, turno) =>
+                total + Number(turno.horas),
+            0
+        );
+
+    const total =
+        horasActuales +
+        horasNuevoTurno;
+
+    if (total >= 44) {
+
+        mostrarAlerta(
+            `⚠️ ${portero.nombre} tiene ${total.toFixed(1)} horas. Supera el límite recomendado de 44 horas.`,
+            'error'
+        );
+
+    } else if (total >= 42) {
+
+        mostrarAlerta(
+            `⚠️ ${portero.nombre} tiene ${total.toFixed(1)} horas. Está cerca del límite semanal.`,
+            'warning'
+        );
+    }
+}
+
+function cerrarModalNovedad() {
+
+    modalNovedad.style.display =
+        'none';
+}
+
+async function guardarNovedad() {
+
+    const data = {
+
+        descripcion:
+            document.getElementById(
+                'descripcionNovedad'
+            ).value,
+
+        portero_id:
+            parseInt(
+                document.getElementById(
+                    'porteroNovedad'
+                ).value
+            ),
+
+        fecha:
+            document.getElementById(
+                'fechaNovedad'
+            ).value,
+
+        horas:
+            parseFloat(
+                document.getElementById(
+                    'horasNovedad'
+                ).value
+            )
+    };
+
+    const response =
+        await fetch(
+            '/api/agregar-novedad',
+            {
+                method:'POST',
+                headers:{
+                    'Content-Type':
+                        'application/json'
+                },
+                body:JSON.stringify(data)
+            }
+        );
+
+    const resultado =
+        await response.json();
+
+    mostrarAlerta(
+        resultado.message,
+        resultado.success
+            ? 'success'
+            : 'error'
+    );
+
+    if (resultado.success) {
+
+        cerrarModalNovedad();
+
+        await cargarNovedades();
+
+        actualizarContabilidadPersonal();
+
+        await actualizarPreviewExcel();
+    }
 }
 
 horaInicioInput.addEventListener('input', calcularHoras);
@@ -815,6 +1295,8 @@ window.abrirModalEditar = abrirModalEditar;
 window.cerrarModalEditar = cerrarModalEditar;
 btnDescargarExcel.addEventListener('click', descargarExcel);
 fechaInput.value = new Date().toISOString().split('T')[0];
+btnGuardarPortero.addEventListener('click', guardarPortero);
+btnEliminarPortero.addEventListener('click', eliminarPortero);
 cargarPorteros();
 cargarAsignaciones();
 
@@ -831,5 +1313,15 @@ function formatearFecha(fechaString) {
 
 // Inicializar
 fechaInput.value = new Date().toISOString().split('T')[0];
-cargarPorteros();
-cargarAsignaciones();
+async function inicializar() {
+
+    await cargarPorteros();
+
+    await cargarNovedades();
+
+    await cargarAsignaciones();
+
+    actualizarContabilidadPersonal();
+}
+inicializar();
+
